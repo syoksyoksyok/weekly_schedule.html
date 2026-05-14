@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="ja" style="--dayColor: #8f8b86;"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>週間生活リズム スケジュール POC</title>
+<style>
+:root{
+  --bg:#ece7e1;
+  --panel:#f7f4ef;
+  --panel2:#e2ddd6;
+  --line:#cec6bd;
+  --text:#333;
+  --muted:#706960;
+  --btn:#aaa197;
+  --accent:#c9beb2;
+  --danger:#b88f8f;
+  --green:#9eaf9c;
+  --history:#8f867d;
+  --dayColor:#aaa197;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  overscroll-behavior:none;
+}
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding:8px 6px 6px;
+  background:var(--panel2);
+  border-bottom:1px solid var(--line);
+}
+.headerRow{
+  display:flex;
+  justify-content:flex-start;
+  align-items:center;
+  gap:16px;
+  margin-bottom:6px;
+}
+h1{
+  margin:0;
+  font-size:16px;
+  line-height:1.2;
+  border-left:6px solid var(--dayColor);
+  padding-left:8px;
+}
+.historyBtns{
+  display:flex;
+  gap:6px;
+}
+.historyBtn{
+  border:0;
+  border-radius:10px;
+  background:var(--history);
+  color:#fff;
+  padding:7px 9px;
+  font-size:15px;
+  min-width:36px;
+}
+.historyBtn:disabled{
+  opacity:.55;
+}
+
+.copyBtn{
+  border:0;
+  border-radius:10px;
+  background:#958d84;
+  color:#fff;
+  padding:7px 8px;
+  font-size:12px;
+  min-width:38px;
+}
+
+.copyBtn:disabled{
+  opacity:.45;
+}
+
+#saveHtmlBtn.mobileDisabled{
+  opacity:.35;
+  filter:grayscale(1);
+}
+
+#saveHtmlBtn{
+  min-width:32px;
+  padding:6px 6px;
+  font-size:11px;
+  opacity:.92;
+}
+
+.tabs{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:3px;
+}
+.tab{
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:7px 0;
+  font-size:13px;
+  color:#333;
+  background:#f3eee8;
+}
+.tab.active{
+  color:#222;
+  font-weight:700;
+  border-color:var(--dayColor);
+  box-shadow:inset 0 -3px 0 var(--dayColor);
+}
+.tab.mon{background:#ddd9d6}
+.tab.tue{background:#e5d8d3}
+.tab.wed{background:#dfe5e2}
+.tab.thu{background:#e2d8cf}
+.tab.fri{background:#e8dfc8}
+.tab.sat{background:#dce3e7}
+.tab.sun{background:#ecd5d2}
+
+main{
+  padding:6px;
+}
+.row{
+  display:grid;
+  grid-template-columns:82px 36px 1fr;
+  gap:5px;
+  align-items:stretch;
+  margin-bottom:5px;
+  min-height:0;
+}
+.timeBox{
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-left:5px solid var(--dayColor);
+  border-radius:10px;
+  padding:5px 3px;
+  font-size:12px;
+  line-height:1.25;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:0;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.timeBox .range{
+  font-weight:600;
+  white-space:nowrap;
+}
+.timeBox .dur{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:2px;
+}
+.taskWrap{
+  position:relative;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  background:#fbfaf7;
+  border:1px solid var(--line);
+  border-radius:10px;
+  min-height:46px;
+  overflow:hidden;
+}
+.task{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow:auto;
+  border:0;
+  outline:0;
+  background:transparent;
+  resize:none;
+  padding:7px 20px 15px 8px;
+  font-size:14px;
+  line-height:1.35;
+  color:var(--text);
+}
+.resizeHandle{
+  position:absolute;
+  right:3px;
+  bottom:3px;
+  width:18px;
+  height:18px;
+  border-radius:6px;
+  background:linear-gradient(135deg, transparent 45%, #9b9289 46%, #9b9289 54%, transparent 55%);
+  opacity:.75;
+  touch-action:none;
+}
+.actions{
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:repeat(3,minmax(0,1fr));
+  gap:3px;
+}
+.actionBtn{
+  border:0;
+  border-radius:9px;
+  background:var(--green);
+  color:#fff;
+  font-size:11px;
+  padding:0;
+  min-height:0;
+}
+.actionBtn.delete{
+  background:var(--danger);
+  font-size:15px;
+}
+.bottomBar{
+  position:sticky;
+  bottom:0;
+  z-index:15;
+  padding:6px;
+  background:linear-gradient(to top, var(--bg) 80%, rgba(236,231,225,0));
+}
+.fullBtn{
+  width:100%;
+  border:0;
+  border-radius:10px;
+  padding:6px;
+  background:var(--btn);
+  color:white;
+  font-size:12px;
+}
+.modalBackdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.18);
+  display:none;
+  align-items:flex-end;
+  z-index:50;
+}
+.modal{
+  width:100%;
+  background:#f5f2ee;
+  border-top:1px solid var(--line);
+  border-radius:18px 18px 0 0;
+  padding:12px;
+  box-shadow:0 -8px 30px rgba(0,0,0,.12);
+}
+.modalTitle{
+  font-size:14px;
+  margin-bottom:8px;
+  color:var(--muted);
+}
+.durationGrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+.durationBtn{
+  border:1px solid var(--line);
+  background:#fffdf9;
+  color:var(--text);
+  border-radius:12px;
+  padding:12px 4px;
+  font-size:14px;
+}
+.durationBtn.primary{
+  background:var(--accent);
+}
+.closeBtn{
+  margin-top:10px;
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:10px;
+  background:#8b8279;
+  color:white;
+}
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:76px;
+  transform:translateX(-50%);
+  background:rgba(60,55,50,.92);
+  color:white;
+  font-size:12px;
+  padding:8px 12px;
+  border-radius:999px;
+  opacity:0;
+  pointer-events:none;
+  transition:.2s;
+  z-index:90;
+}
+.toast.show{opacity:1}
+
+
+
+@media screen and (max-width: 900px){
+  .row{
+    grid-template-columns:70px 25px 1fr;
+  }
+
+  .timeBox{
+    font-size:11px;
+    padding:5px 2px;
+  }
+
+  .timeBox .dur{
+    font-size:10px;
+  }
+
+  .actionBtn{
+    font-size:10px;
+  }
+
+  .actionBtn.delete{
+    font-size:13px;
+  }
+}
+
+@media screen and (orientation: landscape) and (max-width: 900px){
+  body{
+    max-width:520px;
+    margin:0 auto;
+    background:var(--bg);
+  }
+}
+
+
+.sectionDivider{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:10px 2px 8px;
+  opacity:.82;
+}
+
+.sectionDivider::before,
+.sectionDivider::after{
+  content:"";
+  height:1px;
+  background:#c9c0b7;
+  flex:1;
+}
+
+.sectionDivider span{
+  font-size:11px;
+  color:#706960;
+  letter-spacing:.08em;
+  background:#e2ddd6;
+  border:1px solid #cec6bd;
+  border-radius:999px;
+  padding:2px 8px;
+}
+
+
+.row.sleeping{
+  opacity:.58;
+  filter:grayscale(.35);
+}
+
+.row.sleeping .timeBox,
+.row.sleeping .taskWrap,
+.row.sleeping .actionBtn{
+  background:#d8d5d1 !important;
+  color:#6f6963;
+}
+
+.row.sleeping .task{
+  color:#000;
+  font-weight:500;
+}
+
+
+.sleepActionBtn{
+  width:100%;
+  margin-top:10px;
+  border:1px solid #c4beb7;
+  border-radius:12px;
+  padding:14px 12px;
+  background:#d8d5d1;
+  color:#5f5a55;
+  font-size:15px;
+  font-weight:700;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+
+</style>
+</head>
+<body>
+<header>
+  <div class="headerRow">
+    <h1 id="title">月曜日</h1>
+    <div class="historyBtns">
+      <button class="historyBtn" id="undoBtn" disabled="">⟲</button>
+      <button class="historyBtn" id="redoBtn" disabled="">⟳</button>
+      <button class="copyBtn" id="copyWeekdayBtn" type="button">⧉</button>
+      <button class="copyBtn" id="pasteWeekdayBtn" type="button">⤓</button>
+      <button class="copyBtn" id="saveHtmlBtn" type="button">💾</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs"><button class="tab mon active">月</button><button class="tab tue">火</button><button class="tab wed">水</button><button class="tab thu">木</button><button class="tab fri">金</button><button class="tab sat">土</button><button class="tab sun">日</button></div>
+</header>
+
+<main id="schedule"><div class="sectionDivider"><span>AM</span></div><div class="row" style="height: 72px;">
+      <div class="timeBox" data-index="0">
+        <div class="range">06:30<br>〜06:45</div>
+        <div class="dur">15分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">起床</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 78px;">
+      <div class="timeBox" data-index="1">
+        <div class="range">06:45<br>〜07:15</div>
+        <div class="dur">30分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">朝の支度</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 78px;">
+      <div class="timeBox" data-index="2">
+        <div class="range">07:15<br>〜07:45</div>
+        <div class="dur">30分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">朝食</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 78px;">
+      <div class="timeBox" data-index="3">
+        <div class="range">07:45<br>〜08:15</div>
+        <div class="dur">30分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">出勤準備</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 105px;">
+      <div class="timeBox" data-index="4">
+        <div class="range">08:15<br>〜09:00</div>
+        <div class="dur">45分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">通勤</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 186px;">
+      <div class="timeBox" data-index="5">
+        <div class="range">09:00<br>〜10:30</div>
+        <div class="dur">1時間30分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">WORK</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 72px;">
+      <div class="timeBox" data-index="6">
+        <div class="range">10:30<br>〜10:45</div>
+        <div class="dur">15分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">小休憩</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 159px;">
+      <div class="timeBox" data-index="7">
+        <div class="range">10:45<br>〜12:00</div>
+        <div class="dur">1時間15分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">WORK</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="sectionDivider"><span>PM</span></div><div class="row" style="height: 132px;">
+      <div class="timeBox" data-index="8">
+        <div class="range">12:00<br>〜13:00</div>
+        <div class="dur">1時間</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">昼休憩</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 240px;">
+      <div class="timeBox" data-index="9">
+        <div class="range">13:00<br>〜15:00</div>
+        <div class="dur">2時間</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">WORK</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 72px;">
+      <div class="timeBox" data-index="10">
+        <div class="range">15:00<br>〜15:15</div>
+        <div class="dur">15分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">小休憩</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 300px;">
+      <div class="timeBox" data-index="11">
+        <div class="range">15:15<br>〜18:00</div>
+        <div class="dur">2時間45分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">WORK</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="sectionDivider"><span>EVENING</span></div><div class="row" style="height: 78px;">
+      <div class="timeBox" data-index="12">
+        <div class="range">18:00<br>〜18:30</div>
+        <div class="dur">30分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">退勤</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 132px;">
+      <div class="timeBox" data-index="13">
+        <div class="range">18:30<br>〜19:30</div>
+        <div class="dur">1時間</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">通勤・帰宅</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 105px;">
+      <div class="timeBox" data-index="14">
+        <div class="range">19:30<br>〜20:15</div>
+        <div class="dur">45分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">夕食</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 267px;">
+      <div class="timeBox" data-index="15">
+        <div class="range">20:15<br>〜22:30</div>
+        <div class="dur">2時間15分</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">自由時間</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row" style="height: 132px;">
+      <div class="timeBox" data-index="16">
+        <div class="range">22:30<br>〜23:30</div>
+        <div class="dur">1時間</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">入浴・就寝準備</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div><div class="row sleeping" style="height: 300px;">
+      <div class="timeBox" data-index="17">
+        <div class="range">23:30<br>〜06:30</div>
+        <div class="dur">7時間</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">就寝（睡眠時間：7時間）</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    </div></main>
+
+<div class="bottomBar">
+  <button class="fullBtn" id="resetBtn">この曜日を初期状態に戻す</button>
+</div>
+
+<div class="modalBackdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modalTitle" id="modalTitle">時間の長さを選択</div>
+    <div class="durationGrid" id="durationGrid"></div>
+    <button class="sleepActionBtn" id="sleepActionBtn" type="button">就寝</button>
+    <button class="closeBtn" id="closeModal" type="button">閉じる</button>
+  </div>
+</div>
+<script id="embeddedScheduleData" type="application/json">{"activeDay":"mon","weekData":{"mon":[{"start":390,"duration":15,"text":"起床","height":null},{"start":405,"duration":30,"text":"朝の支度","height":null},{"start":435,"duration":30,"text":"朝食","height":null},{"start":465,"duration":30,"text":"出勤準備","height":null},{"start":495,"duration":45,"text":"通勤","height":null},{"start":540,"duration":90,"text":"WORK","height":null},{"start":630,"duration":15,"text":"小休憩","height":null},{"start":645,"duration":75,"text":"WORK","height":null},{"start":720,"duration":60,"text":"昼休憩","height":null},{"start":780,"duration":120,"text":"WORK","height":null},{"start":900,"duration":15,"text":"小休憩","height":null},{"start":915,"duration":165,"text":"WORK","height":null},{"start":1080,"duration":30,"text":"退勤","height":null},{"start":1110,"duration":60,"text":"通勤・帰宅","height":null},{"start":1170,"duration":45,"text":"夕食","height":null},{"start":1215,"duration":135,"text":"自由時間","height":null},{"start":1350,"duration":60,"text":"入浴・就寝準備","height":null},{"start":1410,"duration":420,"text":"就寝（睡眠時間：7時間）","height":null}],"tue":[{"start":390,"duration":15,"text":"起床","height":null},{"start":405,"duration":30,"text":"朝の支度","height":null},{"start":435,"duration":30,"text":"朝食","height":null},{"start":465,"duration":30,"text":"出勤準備","height":null},{"start":495,"duration":45,"text":"通勤","height":null},{"start":540,"duration":90,"text":"WORK","height":null},{"start":630,"duration":15,"text":"小休憩","height":null},{"start":645,"duration":75,"text":"WORK","height":null},{"start":720,"duration":60,"text":"昼休憩","height":null},{"start":780,"duration":120,"text":"WORK","height":null},{"start":900,"duration":15,"text":"小休憩","height":null},{"start":915,"duration":165,"text":"WORK","height":null},{"start":1080,"duration":30,"text":"退勤","height":null},{"start":1110,"duration":60,"text":"通勤・帰宅","height":null},{"start":1170,"duration":45,"text":"夕食","height":null},{"start":1215,"duration":135,"text":"自由時間","height":null},{"start":1350,"duration":60,"text":"入浴・就寝準備","height":null},{"start":1410,"duration":420,"text":"就寝（睡眠時間：7時間）","height":null}],"wed":[{"start":390,"duration":15,"text":"起床","height":null},{"start":405,"duration":30,"text":"朝の支度","height":null},{"start":435,"duration":30,"text":"朝食","height":null},{"start":465,"duration":30,"text":"出勤準備","height":null},{"start":495,"duration":45,"text":"通勤","height":null},{"start":540,"duration":90,"text":"WORK","height":null},{"start":630,"duration":15,"text":"小休憩","height":null},{"start":645,"duration":75,"text":"WORK","height":null},{"start":720,"duration":60,"text":"昼休憩","height":null},{"start":780,"duration":120,"text":"WORK","height":null},{"start":900,"duration":15,"text":"小休憩","height":null},{"start":915,"duration":165,"text":"WORK","height":null},{"start":1080,"duration":30,"text":"退勤","height":null},{"start":1110,"duration":60,"text":"通勤・帰宅","height":null},{"start":1170,"duration":45,"text":"夕食","height":null},{"start":1215,"duration":135,"text":"自由時間","height":null},{"start":1350,"duration":60,"text":"入浴・就寝準備","height":null},{"start":1410,"duration":420,"text":"就寝（睡眠時間：7時間）","height":null}],"thu":[{"start":390,"duration":15,"text":"起床","height":null},{"start":405,"duration":30,"text":"朝の支度","height":null},{"start":435,"duration":30,"text":"朝食","height":null},{"start":465,"duration":30,"text":"出勤準備","height":null},{"start":495,"duration":45,"text":"通勤","height":null},{"start":540,"duration":90,"text":"WORK","height":null},{"start":630,"duration":15,"text":"小休憩","height":null},{"start":645,"duration":75,"text":"WORK","height":null},{"start":720,"duration":60,"text":"昼休憩","height":null},{"start":780,"duration":120,"text":"WORK","height":null},{"start":900,"duration":15,"text":"小休憩","height":null},{"start":915,"duration":165,"text":"WORK","height":null},{"start":1080,"duration":30,"text":"退勤","height":null},{"start":1110,"duration":60,"text":"通勤・帰宅","height":null},{"start":1170,"duration":45,"text":"夕食","height":null},{"start":1215,"duration":135,"text":"自由時間","height":null},{"start":1350,"duration":60,"text":"入浴・就寝準備","height":null},{"start":1410,"duration":420,"text":"就寝（睡眠時間：7時間）","height":null}],"fri":[{"start":390,"duration":15,"text":"起床","height":null},{"start":405,"duration":30,"text":"朝の支度","height":null},{"start":435,"duration":30,"text":"朝食","height":null},{"start":465,"duration":30,"text":"出勤準備","height":null},{"start":495,"duration":45,"text":"通勤","height":null},{"start":540,"duration":90,"text":"WORK","height":null},{"start":630,"duration":15,"text":"小休憩","height":null},{"start":645,"duration":75,"text":"WORK","height":null},{"start":720,"duration":60,"text":"昼休憩","height":null},{"start":780,"duration":120,"text":"WORK","height":null},{"start":900,"duration":15,"text":"小休憩","height":null},{"start":915,"duration":165,"text":"WORK","height":null},{"start":1080,"duration":30,"text":"退勤","height":null},{"start":1110,"duration":60,"text":"通勤・帰宅","height":null},{"start":1170,"duration":45,"text":"夕食","height":null},{"start":1215,"duration":135,"text":"自由時間","height":null},{"start":1350,"duration":60,"text":"入浴・就寝準備","height":null},{"start":1410,"duration":510,"text":"就寝（睡眠時間：8時間30分）","height":null}],"sat":[{"start":480,"duration":60,"text":"起床・朝食","height":null},{"start":540,"duration":120,"text":"家事","height":null},{"start":660,"duration":120,"text":"外出","height":null},{"start":780,"duration":60,"text":"昼食","height":null},{"start":840,"duration":60,"text":"休憩","height":null},{"start":900,"duration":180,"text":"自由時間","height":null},{"start":1080,"duration":60,"text":"夕食","height":null},{"start":1140,"duration":210,"text":"自由時間","height":null},{"start":1350,"duration":90,"text":"入浴・就寝準備","height":null},{"start":1440,"duration":480,"text":"就寝（睡眠時間：8時間）","height":null}],"sun":[{"start":480,"duration":60,"text":"起床・朝食","height":null},{"start":540,"duration":60,"text":"ゆっくり準備","height":null},{"start":600,"duration":120,"text":"買い物・家事","height":null},{"start":720,"duration":60,"text":"昼食","height":null},{"start":780,"duration":120,"text":"休憩","height":null},{"start":900,"duration":120,"text":"自由時間","height":null},{"start":1020,"duration":60,"text":"翌週の準備","height":null},{"start":1080,"duration":60,"text":"夕食","height":null},{"start":1140,"duration":120,"text":"自由時間","height":null},{"start":1260,"duration":90,"text":"入浴・就寝準備","height":null},{"start":1350,"duration":480,"text":"就寝（睡眠時間：8時間）","height":null}]},"savedAt":"2026-05-14T01:39:21.083Z"}</script>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = "weekly_life_schedule_public_worker_template_v5_auto_sleep";
+const HISTORY_LIMIT = 80;
+
+const days = [
+  {key:"mon", short:"月", name:"月曜日", color:"#8f8b86"},
+  {key:"tue", short:"火", name:"火曜日", color:"#a07b72"},
+  {key:"wed", short:"水", name:"水曜日", color:"#8fa6a1"},
+  {key:"thu", short:"木", name:"木曜日", color:"#9b8573"},
+  {key:"fri", short:"金", name:"金曜日", color:"#b6a06d"},
+  {key:"sat", short:"土", name:"土曜日", color:"#8fa0aa"},
+  {key:"sun", short:"日", name:"日曜日", color:"#b37f7a"}
+];
+
+const durationChoices = [15,30,60,90,120,150,180,210,240,270,300,330,360];
+
+let activeDay = "mon";
+let weekData = {};
+let editingIndex = null;
+let undoStack = [];
+let redoStack = [];
+let inputTimers = {};
+let copiedDayRows = null;
+let copiedDayName = "";
+let savedAt = null;
+
+function currentRows(){
+  return weekData[activeDay];
+}
+
+function setRows(newRows){
+  weekData[activeDay] = newRows;
+}
+
+function cloneData(data){
+  return JSON.parse(JSON.stringify(data));
+}
+
+function pushHistory(){
+  undoStack.push(cloneData(weekData));
+  if(undoStack.length > HISTORY_LIMIT) undoStack.shift();
+  redoStack = [];
+  updateHistoryButtons();
+  updateCopyButtons();
+}
+
+function undo(){
+  if(undoStack.length === 0) return;
+  redoStack.push(cloneData(weekData));
+  weekData = undoStack.pop();
+  ensureWeekData();
+  save(false);
+  renderAll();
+  updateHistoryButtons();
+  showToast("戻しました");
+}
+
+function redo(){
+  if(redoStack.length === 0) return;
+  undoStack.push(cloneData(weekData));
+  weekData = redoStack.pop();
+  ensureWeekData();
+  save(false);
+  renderAll();
+  updateHistoryButtons();
+  showToast("やり直しました");
+}
+
+function updateHistoryButtons(){
+  document.getElementById("undoBtn").disabled = undoStack.length === 0;
+  document.getElementById("redoBtn").disabled = redoStack.length === 0;
+}
+
+function minutesToTime(min){
+  min = ((min % 1440) + 1440) % 1440;
+  const h = Math.floor(min/60);
+  const m = min%60;
+  return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+
+
+function calcAutoHeight(duration){
+  // 時間の長さを「行全体の高さ」に反映する
+  // 15分でもスマホで重ならない最低高さを確保する
+  // 15分=72px、30分=78px、60分=132px、90分=186px
+  return Math.max(
+    72,
+    Math.min(300, Math.round(24 + duration * 1.8))
+  );
+}
+
+function durationLabel(min){
+  if(min < 60) return min + "分";
+  const h = Math.floor(min/60);
+  const m = min%60;
+  return m ? `${h}時間${m}分` : `${h}時間`;
+}
+
+
+function isSleepText(text){
+  return String(text || "").trim().startsWith("就寝");
+}
+
+function sleepTextFromDuration(min){
+  return `就寝（睡眠時間：${durationLabel(min)}）`;
+}
+
+function nextDayKey(dayKey){
+  const index = days.findIndex(d=>d.key === dayKey);
+  if(index < 0) return "mon";
+  return days[(index + 1) % days.length].key;
+}
+
+function updateSleepRows(){
+  days.forEach(day=>{
+    const rows = weekData[day.key];
+    if(!Array.isArray(rows) || rows.length === 0) return;
+
+    const nextRows = weekData[nextDayKey(day.key)];
+    if(!Array.isArray(nextRows) || nextRows.length === 0) return;
+
+    const nextStart = nextRows[0].start;
+
+    rows.forEach(row=>{
+      if(!isSleepText(row.text)) return;
+
+      let sleepMinutes = (24 * 60 - row.start) + nextStart;
+
+      // 異常値の保険。通常は翌日の最初の予定まで。
+      if(sleepMinutes <= 0) sleepMinutes += 24 * 60;
+      sleepMinutes = Math.max(15, Math.min(24 * 60, sleepMinutes));
+
+      row.duration = sleepMinutes;
+      row.text = sleepTextFromDuration(sleepMinutes);
+    });
+  });
+}
+
+
+function buildRows(items){
+  return items.map(item=>({
+    start:item[0],
+    duration:item[1],
+    text:item[2],
+    height:null
+  }));
+}
+
+function defaultRows(dayKey){
+  const weekdayRows = [
+    [6*60+30, 15, "起床"],
+    [6*60+45, 30, "朝の支度"],
+    [7*60+15, 30, "朝食"],
+    [7*60+45, 30, "出勤準備"],
+    [8*60+15, 45, "通勤"],
+    [9*60, 90, "WORK"],
+    [10*60+30, 15, "小休憩"],
+    [10*60+45, 75, "WORK"],
+    [12*60, 60, "昼休憩"],
+    [13*60, 120, "WORK"],
+    [15*60, 15, "小休憩"],
+    [15*60+15, 165, "WORK"],
+    [18*60, 30, "退勤"],
+    [18*60+30, 60, "通勤・帰宅"],
+    [19*60+30, 45, "夕食"],
+    [20*60+15, 135, "自由時間"],
+    [22*60+30, 60, "入浴・就寝準備"],
+    [23*60+30, 450, "就寝"]
+  ];
+
+  const saturdayRows = [
+    [8*60, 60, "起床・朝食"],
+    [9*60, 120, "家事"],
+    [11*60, 120, "外出"],
+    [13*60, 60, "昼食"],
+    [14*60, 60, "休憩"],
+    [15*60, 180, "自由時間"],
+    [18*60, 60, "夕食"],
+    [19*60, 210, "自由時間"],
+    [22*60+30, 90, "入浴・就寝準備"],
+    [24*60, 480, "就寝"]
+  ];
+
+  const sundayRows = [
+    [8*60, 60, "起床・朝食"],
+    [9*60, 60, "ゆっくり準備"],
+    [10*60, 120, "買い物・家事"],
+    [12*60, 60, "昼食"],
+    [13*60, 120, "休憩"],
+    [15*60, 120, "自由時間"],
+    [17*60, 60, "翌週の準備"],
+    [18*60, 60, "夕食"],
+    [19*60, 120, "自由時間"],
+    [21*60, 90, "入浴・就寝準備"],
+    [22*60+30, 480, "就寝"]
+  ];
+
+  if(dayKey === "sat") return buildRows(saturdayRows);
+  if(dayKey === "sun") return buildRows(sundayRows);
+
+  return buildRows(weekdayRows);
+}
+
+function ensureWeekData(){
+  days.forEach(day=>{
+    if(!Array.isArray(weekData[day.key]) || weekData[day.key].length === 0){
+      weekData[day.key] = defaultRows(day.key);
+    }
+    normalizeRows(weekData[day.key]);
+  });
+}
+
+function normalizeRows(arr){
+  if(!arr || arr.length === 0) return;
+  for(let i=1; i<arr.length; i++){
+    arr[i].start = arr[i-1].start + arr[i-1].duration;
+  }
+}
+
+function save(updateButtons=true){
+  updateSleepRows();
+
+  savedAt = new Date().toISOString();
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    activeDay,
+    weekData,
+    savedAt
+  }));
+
+  if(updateButtons) updateHistoryButtons();
+}
+
+function load(){
+  let localData = null;
+  let embeddedData = null;
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+
+  if(saved){
+    try{
+      localData = JSON.parse(saved);
+    }catch(e){
+      localData = null;
+    }
+  }
+
+  const embedded = document.getElementById("embeddedScheduleData");
+
+  if(
+    embedded &&
+    embedded.textContent.trim() &&
+    embedded.textContent.trim() !== "{}"
+  ){
+    try{
+      embeddedData = JSON.parse(embedded.textContent);
+    }catch(e){
+      embeddedData = null;
+    }
+  }
+
+  const localTime = localData?.savedAt
+    ? new Date(localData.savedAt).getTime()
+    : 0;
+
+  const embeddedTime = embeddedData?.savedAt
+    ? new Date(embeddedData.savedAt).getTime()
+    : 0;
+
+  const chosen =
+    embeddedTime > localTime
+    ? embeddedData
+    : localData;
+
+  if(chosen){
+    activeDay = chosen.activeDay || "mon";
+    weekData = chosen.weekData || {};
+    savedAt = chosen.savedAt || null;
+  }else{
+    activeDay = "mon";
+    weekData = {};
+    savedAt = null;
+  }
+
+  ensureWeekData();
+  updateSleepRows();
+}
+
+function renderTabs(){
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+
+  days.forEach(day=>{
+    const btn = document.createElement("button");
+    btn.className = `tab ${day.key}` + (day.key === activeDay ? " active" : "");
+    btn.textContent = day.short;
+
+    btn.addEventListener("click",()=>{
+      if(activeDay === day.key) return;
+
+      activeDay = day.key;
+      inputTimers = {};
+      save();
+      renderAll(false);
+    });
+
+    tabs.appendChild(btn);
+  });
+}
+
+
+function updateCopyButtons(){
+  const pasteBtn = document.getElementById("pasteWeekdayBtn");
+  if(pasteBtn){
+    pasteBtn.disabled = !copiedDayRows;
+  }
+}
+
+function copyCurrentDay(){
+  const day = days.find(d=>d.key === activeDay);
+  copiedDayRows = cloneData(weekData[activeDay]);
+  copiedDayName = day ? day.name : "";
+  updateCopyButtons();
+  showToast(`${copiedDayName}をCPしました`);
+}
+
+function pasteToCurrentDay(){
+  if(!copiedDayRows) return;
+
+  const day = days.find(d=>d.key === activeDay);
+
+  pushHistory();
+  weekData[activeDay] = cloneData(copiedDayRows);
+  normalizeRows(weekData[activeDay]);
+  inputTimers = {};
+
+  save();
+  renderAll(false);
+  updateCopyButtons();
+
+  showToast(`${day.name}へPSTしました`);
+}
+
+function renderHeader(){
+  const day = days.find(d=>d.key===activeDay);
+  document.documentElement.style.setProperty("--dayColor", day.color);
+  document.getElementById("title").textContent = day.name;
+}
+
+
+function getTimeZoneClass(startMin){
+  const h = Math.floor(startMin / 60);
+
+  if(h < 12) return "morning";
+  if(h < 18) return "daytime";
+  if(h < 21) return "evening";
+  return "night";
+}
+
+function renderSchedule(){
+  updateSleepRows();
+
+  const root = document.getElementById("schedule");
+  const rows = currentRows();
+  root.innerHTML = "";
+
+  const firstStart = rows.length ? rows[0].start : 6 * 60;
+
+  const dividerMarks = [
+    {time: firstStart, label: "AM"},
+    {time: 12 * 60, label: "PM"},
+    {time: 18 * 60, label: "EVENING"}
+  ];
+  const shownDividers = new Set();
+
+  rows.forEach((row, index)=>{
+
+    dividerMarks.forEach(mark=>{
+      const prevStart = index === 0 ? -Infinity : rows[index - 1].start;
+      const shouldShow =
+        !shownDividers.has(mark.label) &&
+        row.start >= mark.time &&
+        prevStart < mark.time;
+
+      if(shouldShow){
+        const divider = document.createElement("div");
+        divider.className = "sectionDivider";
+        divider.innerHTML = `<span>${mark.label}</span>`;
+        root.appendChild(divider);
+        shownDividers.add(mark.label);
+      }
+    });
+
+    const end = row.start + row.duration;
+    const el = document.createElement("div");
+    el.className = "row" + (isSleepText(row.text) ? " sleeping" : "");
+
+    const autoHeight = calcAutoHeight(row.duration);
+    const finalHeight = row.height ? Math.max(row.height, autoHeight) : autoHeight;
+    el.style.height = finalHeight + "px";
+
+    el.innerHTML = `
+      <div class="timeBox" data-index="${index}">
+        <div class="range">${minutesToTime(row.start)}<br>〜${minutesToTime(end)}</div>
+        <div class="dur">${durationLabel(row.duration)}</div>
+      </div>
+      <div class="actions">
+        <button class="actionBtn addUp">↑</button>
+        <button class="actionBtn delete">×</button>
+        <button class="actionBtn addDown">↓</button>
+      </div>
+      <div class="taskWrap">
+        <textarea class="task" placeholder="予定内容">${escapeHtml(row.text || "")}</textarea>
+        <div class="resizeHandle" title="高さ変更"></div>
+      </div>
+    `;
+
+    el.querySelector(".timeBox").addEventListener("click",()=>openDurationModal(index));
+
+    const textarea = el.querySelector(".task");
+    textarea.addEventListener("input",()=>{
+      const timerKey = activeDay + "_" + index;
+      if(!inputTimers[timerKey]){
+        pushHistory();
+      }
+      currentRows()[index].text = textarea.value;
+      save();
+
+      clearTimeout(inputTimers[timerKey]);
+      inputTimers[timerKey] = setTimeout(()=>{
+        inputTimers[timerKey] = null;
+      },700);
+    });
+
+    textarea.addEventListener("blur",()=>{
+      const timerKey = activeDay + "_" + index;
+      if(inputTimers[timerKey]){
+        clearTimeout(inputTimers[timerKey]);
+        inputTimers[timerKey] = null;
+      }
+    });
+
+    el.querySelector(".addUp").addEventListener("click",()=>{
+      pushHistory();
+      addAbove(index);
+    });
+
+    el.querySelector(".addDown").addEventListener("click",()=>{
+      pushHistory();
+      addBelow(index);
+    });
+
+    el.querySelector(".delete").addEventListener("click",()=>{
+      const rows = currentRows();
+      if(rows.length <= 1){
+        showToast("最後の1行は削除できません");
+        return;
+      }
+      pushHistory();
+      rows.splice(index,1);
+      normalizeRows(rows);
+      renderAll(false);
+      save();
+    });
+
+    setupResize(el.querySelector(".taskWrap"), el.querySelector(".resizeHandle"), index);
+
+    root.appendChild(el);
+  });
+
+  updateHistoryButtons();
+}
+
+function renderAll(includeTabs=true){
+  renderHeader();
+  if(includeTabs) renderTabs();
+  else renderTabs();
+  renderSchedule();
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+function addAbove(index){
+  const rows = currentRows();
+  const base = rows[index];
+  const dur = base.duration || 30;
+  rows.splice(index,0,{
+    start: base.start - dur,
+    duration: dur,
+    text:"",
+    height:null
+  });
+  normalizeRows(rows);
+  renderAll(false);
+  save();
+  showToast("上に行を追加しました");
+}
+
+function addBelow(index){
+  const rows = currentRows();
+  const base = rows[index];
+  rows.splice(index+1,0,{
+    start: base.start + base.duration,
+    duration: base.duration || 30,
+    text:"",
+    height:null
+  });
+  normalizeRows(rows);
+  renderAll(false);
+  save();
+  showToast("下に行を追加しました");
+}
+
+function openDurationModal(index){
+  editingIndex = index;
+  const row = currentRows()[index];
+  document.getElementById("modalTitle").textContent =
+    `${minutesToTime(row.start)} からの長さを選択`;
+
+  const grid = document.getElementById("durationGrid");
+  grid.innerHTML = "";
+  durationChoices.forEach(min=>{
+    const btn = document.createElement("button");
+    btn.className = "durationBtn" + (row.duration === min ? " primary" : "");
+    btn.textContent = durationLabel(min);
+    btn.addEventListener("click",()=>{
+      pushHistory();
+      currentRows()[index].duration = min;
+      normalizeRows(currentRows());
+      closeModal();
+      renderAll(false);
+      save();
+      showToast("以降の時間をスライドしました");
+    });
+    grid.appendChild(btn);
+  });
+
+  document.getElementById("modalBackdrop").style.display = "flex";
+}
+
+function closeModal(){
+  document.getElementById("modalBackdrop").style.display = "none";
+  editingIndex = null;
+}
+
+document.getElementById("closeModal").addEventListener("click",closeModal);
+
+let sleepTapLock = false;
+
+function applySleepFromModal(e){
+  if(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  if(sleepTapLock) return;
+  sleepTapLock = true;
+  setTimeout(()=>{ sleepTapLock = false; }, 350);
+
+  if(editingIndex === null) return;
+
+  pushHistory();
+  currentRows()[editingIndex].text = "就寝";
+  updateSleepRows();
+  closeModal();
+  renderAll(false);
+  save();
+  showToast("就寝にしました");
+}
+
+const sleepActionBtn = document.getElementById("sleepActionBtn");
+
+// PC / Android Chrome / modern Safari
+sleepActionBtn.addEventListener("click", applySleepFromModal);
+
+// iPhone Safari や file:// 表示で click が安定しない場合の保険
+sleepActionBtn.addEventListener("touchend", applySleepFromModal, {passive:false});
+
+// Pointer Events 対応ブラウザ用
+sleepActionBtn.addEventListener("pointerup", applySleepFromModal);
+
+document.getElementById("modalBackdrop").addEventListener("click",(e)=>{
+  if(e.target.id === "modalBackdrop") closeModal();
+});
+
+const modalEl = document.querySelector(".modal");
+modalEl.addEventListener("click",(e)=>e.stopPropagation());
+modalEl.addEventListener("touchend",(e)=>e.stopPropagation(), {passive:false});
+
+function setupResize(wrap, handle, index){
+  let startY = 0;
+  let startHeight = 0;
+  let didPush = false;
+  const resizeDay = activeDay;
+
+  const onMove = (e)=>{
+    if(!didPush){
+      pushHistory();
+      didPush = true;
+    }
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const next = Math.max(72, Math.min(300, startHeight + (y - startY)));
+    const rowEl = wrap.closest(".row");
+    if(rowEl) rowEl.style.height = next + "px";
+    weekData[resizeDay][index].height = Math.round(next);
+    save();
+  };
+
+  const onEnd = ()=>{
+    document.removeEventListener("mousemove",onMove);
+    document.removeEventListener("mouseup",onEnd);
+    document.removeEventListener("touchmove",onMove);
+    document.removeEventListener("touchend",onEnd);
+  };
+
+  const onStart = (e)=>{
+    e.preventDefault();
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    const rowEl = wrap.closest(".row");
+    startHeight = rowEl ? rowEl.getBoundingClientRect().height : wrap.getBoundingClientRect().height;
+    didPush = false;
+    document.addEventListener("mousemove",onMove);
+    document.addEventListener("mouseup",onEnd);
+    document.addEventListener("touchmove",onMove,{passive:false});
+    document.addEventListener("touchend",onEnd);
+  };
+
+  handle.addEventListener("mousedown",onStart);
+  handle.addEventListener("touchstart",onStart,{passive:false});
+}
+
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  const day = days.find(d=>d.key===activeDay);
+  if(confirm(`${day.name}の入力内容を初期状態に戻しますか？`)){
+    pushHistory();
+    weekData[activeDay] = defaultRows(activeDay);
+    save();
+    renderAll(false);
+  }
+});
+
+document.getElementById("undoBtn").addEventListener("click",undo);
+document.getElementById("redoBtn").addEventListener("click",redo);
+
+document.getElementById("copyWeekdayBtn").addEventListener("click",(e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  copyCurrentDay();
+});
+
+document.getElementById("pasteWeekdayBtn").addEventListener("click",(e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  pasteToCurrentDay();
+});
+
+document.getElementById("saveHtmlBtn").addEventListener("click",(e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+
+  if(e.currentTarget.disabled) return;
+
+  exportCurrentHtml();
+});
+
+
+
+function formatDateForFileName(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}
+
+function exportCurrentHtml(){
+  updateSleepRows();
+  save(false);
+
+  const exportSavedAt = new Date().toISOString();
+
+  const data = {
+    activeDay,
+    weekData,
+    savedAt: exportSavedAt
+  };
+
+  const clone = document.documentElement.cloneNode(true);
+  const embedded = clone.querySelector("#embeddedScheduleData");
+
+  if(embedded){
+    embedded.textContent = JSON.stringify(data);
+  }
+
+  const htmlText = "<!DOCTYPE html>\n" + clone.outerHTML;
+  const blob = new Blob([htmlText], {type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+
+  const now = new Date();
+
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download =
+    `weekly_schedule_${y}${m}${d}_${hh}${mm}${ss}.html`;
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+
+  showToast("現在の状態をHTML保存しました");
+}
+
+
+function isMobileDevice(){
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+function setupMobileSaveButton(){
+  const btn = document.getElementById("saveHtmlBtn");
+  if(!btn) return;
+
+  if(isMobileDevice()){
+    btn.disabled = true;
+    btn.classList.add("mobileDisabled");
+    btn.title = "スマホではHTML保存は無効です";
+  }
+}
+
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(()=>toast.classList.remove("show"),1300);
+}
+
+
+async function tryLockPortrait(){
+  try{
+    if(screen.orientation && screen.orientation.lock){
+      await screen.orientation.lock("portrait");
+    }
+  }catch(e){
+    console.log("orientation lock unsupported");
+  }
+}
+
+tryLockPortrait();
+
+window.addEventListener("orientationchange",()=>{
+  tryLockPortrait();
+});
+
+
+
+let twoFingerStart = null;
+let twoFingerDone = false;
+
+function getTouchCenter(touches){
+  return {
+    x:(touches[0].clientX + touches[1].clientX) / 2,
+    y:(touches[0].clientY + touches[1].clientY) / 2
+  };
+}
+
+document.addEventListener("touchstart",(e)=>{
+  if(e.touches.length === 2){
+    twoFingerStart = getTouchCenter(e.touches);
+    twoFingerDone = false;
+  }
+},{passive:true});
+
+document.addEventListener("touchmove",(e)=>{
+  if(e.touches.length !== 2 || !twoFingerStart || twoFingerDone) return;
+
+  const now = getTouchCenter(e.touches);
+  const dx = now.x - twoFingerStart.x;
+  const dy = now.y - twoFingerStart.y;
+
+  // 横方向の2本指スワイプのみ反応。縦スクロール誤爆を避ける。
+  if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6){
+    if(dx > 0){
+      undo(); // 2本指で右スワイプ
+    }else{
+      redo(); // 2本指で左スワイプ
+    }
+    twoFingerDone = true;
+  }
+},{passive:true});
+
+document.addEventListener("touchend",(e)=>{
+  if(e.touches.length < 2){
+    twoFingerStart = null;
+    twoFingerDone = false;
+  }
+},{passive:true});
+
+
+load();
+renderAll();
+updateHistoryButtons();
+setupMobileSaveButton();
+</script>
+
+
+</body></html>
