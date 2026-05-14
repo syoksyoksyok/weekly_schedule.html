@@ -136,6 +136,8 @@ main{
   min-height:0;
 }
 .timeBox{
+  cursor:grab;
+  touch-action:none;
   height:100%;
   min-height:0;
   overflow:hidden;
@@ -299,6 +301,17 @@ main{
   z-index:90;
 }
 .toast.show{opacity:1}
+
+
+.timeBox.dragging{
+  opacity:.55;
+  cursor:grabbing;
+}
+
+.row.dropTarget{
+  outline:2px dashed var(--dayColor);
+  outline-offset:2px;
+}
 
 
 
@@ -1100,7 +1113,7 @@ function renderSchedule(){
       </div>
     `;
 
-    el.querySelector(".timeBox").addEventListener("click",()=>openDurationModal(index));
+    setupTimeBoxDrag(el.querySelector(".timeBox"), index);
 
     const textarea = el.querySelector(".task");
     textarea.addEventListener("input",()=>{
@@ -1201,6 +1214,170 @@ function addBelow(index){
   save();
   showToast("下に行を追加しました");
 }
+
+
+function moveRow(fromIndex, toIndex){
+  const rows = currentRows();
+
+  if(fromIndex === toIndex) return;
+  if(fromIndex < 0 || toIndex < 0) return;
+  if(fromIndex >= rows.length || toIndex >= rows.length) return;
+
+  pushHistory();
+
+  const moved = rows.splice(fromIndex, 1)[0];
+  rows.splice(toIndex, 0, moved);
+
+  normalizeRows(rows);
+  updateSleepRows();
+  normalizeRows(rows);
+
+  renderAll(false);
+  save();
+
+  showToast("行を入れ替えました");
+}
+
+function setupTimeBoxDrag(timeBox, index){
+
+  const rowData = currentRows()[index];
+
+  // 就寝行は事故防止のため移動不可
+  if(isSleepText(rowData.text)){
+    timeBox.addEventListener("click",()=>openDurationModal(index));
+    return;
+  }
+
+  let startX = 0;
+  let startY = 0;
+  let dragging = false;
+  let dragStarted = false;
+  let currentTargetIndex = index;
+  let movedEnough = false;
+
+  const DRAG_THRESHOLD = 8;
+
+  function clearTargets(){
+    document.querySelectorAll(".row.dropTarget").forEach(el=>{
+      el.classList.remove("dropTarget");
+    });
+  }
+
+  function getRowIndexFromPoint(x, y){
+    const rows = [...document.querySelectorAll("#schedule .row")];
+
+    for(const row of rows){
+      const rect = row.getBoundingClientRect();
+
+      if(
+        y >= rect.top &&
+        y <= rect.bottom
+      ){
+        const box = row.querySelector(".timeBox");
+        if(!box) continue;
+
+        const idx = Number(box.dataset.index);
+
+        if(isNaN(idx)) continue;
+
+        if(isSleepText(currentRows()[idx]?.text)) continue;
+
+        return idx;
+      }
+    }
+
+    return null;
+  }
+
+  function onMove(e){
+
+    const point = e.touches ? e.touches[0] : e;
+
+    const dx = point.clientX - startX;
+    const dy = point.clientY - startY;
+
+    if(!dragStarted){
+      if(Math.hypot(dx, dy) < DRAG_THRESHOLD){
+        return;
+      }
+
+      dragStarted = true;
+      dragging = true;
+      movedEnough = true;
+
+      timeBox.classList.add("dragging");
+    }
+
+    e.preventDefault();
+
+    const targetIndex = getRowIndexFromPoint(point.clientX, point.clientY);
+
+    clearTargets();
+
+    if(targetIndex !== null && targetIndex !== index){
+
+      currentTargetIndex = targetIndex;
+
+      const rows = [...document.querySelectorAll("#schedule .row")];
+      const targetRow = rows.find(row=>{
+        const box = row.querySelector(".timeBox");
+        return box && Number(box.dataset.index) === targetIndex;
+      });
+
+      if(targetRow){
+        targetRow.classList.add("dropTarget");
+      }
+    }
+  }
+
+  function onEnd(){
+
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onEnd);
+    document.removeEventListener("touchmove", onMove);
+    document.removeEventListener("touchend", onEnd);
+
+    clearTargets();
+
+    timeBox.classList.remove("dragging");
+
+    if(dragging && currentTargetIndex !== index){
+      moveRow(index, currentTargetIndex);
+    }else if(!movedEnough){
+      openDurationModal(index);
+    }
+
+    dragging = false;
+    dragStarted = false;
+
+    setTimeout(()=>{
+      movedEnough = false;
+    }, 0);
+  }
+
+  function onStart(e){
+
+    const point = e.touches ? e.touches[0] : e;
+
+    startX = point.clientX;
+    startY = point.clientY;
+
+    dragging = false;
+    dragStarted = false;
+    currentTargetIndex = index;
+    movedEnough = false;
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onEnd);
+
+    document.addEventListener("touchmove", onMove, {passive:false});
+    document.addEventListener("touchend", onEnd);
+  }
+
+  timeBox.addEventListener("mousedown", onStart);
+  timeBox.addEventListener("touchstart", onStart, {passive:false});
+}
+
 
 function openDurationModal(index){
   editingIndex = index;
